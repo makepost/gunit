@@ -10,6 +10,7 @@
   "scripts": {
     "coverage": "GJS_COVERAGE_PREFIXES=`pwd`/gunit-src bash bin/coverage.sh",
     "format": "tslint --fix 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
+    "lint": "tslint 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
     "start": "gjs bin/repl.js",
     "test": "NODE_ENV=production gjs bin/test.js"
   },
