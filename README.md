@@ -54,7 +54,7 @@ Add a script to your `package.json`:
     "test": "gunit"
   },
   "devDependencies": {
-    "gunit": "^1.0.0"
+    "gunit": "^1.0.1"
   }
 }
 ```

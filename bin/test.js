@@ -37,15 +37,29 @@ const scripts = data.files
   )
   .map(x => your + "/" + x);
 
-const tests = scripts.filter(x => /\.test\.js$/.test(x));
-tests.forEach(x => {
-  Test.path = x;
-  require(x);
-  Test.run();
+const loop = imports.mainloop;
+
+(async () => {
+  const tests = scripts.filter(x => /\.test\.js$/.test(x));
+  await Promise.all(
+    tests.map(async x => {
+      Test.path = x;
+      require(x);
+      await Test.run();
+    })
+  );
+
+  // Make sure the report shows uncovered modules.
+  const modules = scripts.filter(x => !/\.test\.js$/.test(x));
+  modules.forEach(x => {
+    print(x);
+    require(x);
+  });
+
+  loop.quit();
+})().catch(error => {
+  loop.quit();
+  throw error;
 });
 
-// Make sure the report shows uncovered modules.
-const modules = scripts.filter(x => !/\.test\.js$/.test(x));
-modules.forEach(x => {
-  require(x);
-});
+loop.run();

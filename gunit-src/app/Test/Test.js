@@ -7,7 +7,7 @@ class Test {
     Test.tests.push(new Test(title, callback));
   }
 
-  static run() {
+  static async run() {
     const component = (/\/([^/]+)\.test\.js$/.exec(this.path) || [
       "",
       this.path
@@ -15,7 +15,7 @@ class Test {
 
     const tests = this.tests.splice(0);
 
-    Promise.all(
+    await Promise.all(
       tests.map(async test => {
         print(`${component}: ${test.title} STARTED`);
 
