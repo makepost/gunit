@@ -13,11 +13,11 @@ new imports["gunit-src"].app.Require.Require.Require().require();
 //                           dir     file    class     method    :))
 
 /**
- * Loads one module from GUnit, the rest from your app. Can't reload modules
- * required through the imports object, so renamed `src` to `gunit-src`
- * which is unlikely to conflict with your app.
+ * `imports.src` keeps the value it has on first access, so renamed `src`
+ * to `gunit-src` which is unlikely to conflict with your app.
  */
 const { Flatten } = require("../gunit-src/app/Flatten/Flatten");
+const { Test } = require("../gunit-src/app/Test/Test");
 
 const your = imports.gi.GLib.get_current_dir();
 imports.searchPath.splice(-1, 1, your);
@@ -39,7 +39,9 @@ const scripts = data.files
 
 const tests = scripts.filter(x => /\.test\.js$/.test(x));
 tests.forEach(x => {
+  Test.path = x;
   require(x);
+  Test.run();
 });
 
 // Make sure the report shows uncovered modules.

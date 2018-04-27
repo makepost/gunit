@@ -14,6 +14,6 @@ fi
 NODE_ENV=development gjs \
   --coverage-prefix="$GJS_COVERAGE_PREFIXES" \
   --coverage-output="$your"/coverage \
-  "$gunit"/bin/test.js "$@"
+  "$gunit"/bin/test.js "$@" &&
 
 genhtml -o "$your"/coverage "$your"/coverage/coverage.lcov

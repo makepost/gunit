@@ -1,7 +1,15 @@
-const throttle = require("lodash/throttle");
+let lastPerf = Date.now();
 const perf = {};
 
-const reportPerf = throttle(function() {
+const reportPerf = () => {
+  const now = Date.now();
+
+  if (now - lastPerf < 10000) {
+    return;
+  }
+
+  lastPerf = now;
+
   const data = Object.keys(perf)
     .map(location => ({
       location,
@@ -11,7 +19,7 @@ const reportPerf = throttle(function() {
     .slice(0, 10);
 
   print(JSON.stringify(data));
-}, 10000);
+};
 
 class Bind {
   /**
@@ -23,7 +31,7 @@ class Bind {
    */
   static auto(self, filename) {
     const { prototype } = self.constructor;
-    const keys = Object.getOwnPropertyNames(self.constructor);
+    const keys = Object.getOwnPropertyNames(prototype);
 
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];

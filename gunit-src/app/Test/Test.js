@@ -3,17 +3,59 @@ class Test {
    * @param {string} title
    * @param {(t: Test) => void} callback
    */
-  static test(title, callback) {
-    print(title + " STARTED");
+  static push(title, callback) {
+    Test.tests.push(new Test(title, callback));
+  }
 
-    try {
-      callback(new Test());
-    } catch (error) {
-      print(title + " ERROR");
-      throw error;
-    }
+  static run() {
+    const component = (/\/([^/]+)\.test\.js$/.exec(this.path) || [
+      "",
+      this.path
+    ])[1];
 
-    print(title + " SUCCESS");
+    const tests = this.tests.splice(0);
+
+    Promise.all(
+      tests.map(async test => {
+        print(`${component}: ${test.title} STARTED`);
+
+        try {
+          await test.callback(test);
+        } catch (error) {
+          print(`${component}: ${test.title} ERROR`);
+          throw error;
+        }
+
+        print(`${component}: ${test.title} SUCCESS`);
+      })
+    ).catch(error => {
+      this.debug(error);
+
+      this.debug(
+        error.stack
+          .replace(/\n[^\w][^\n]+/g, "")
+          .split("\n")
+          .filter(
+            (/** @type {string} */ x) =>
+              x.length &&
+              /\w/.test(x[0]) &&
+              x.indexOf("gunit-src/app/Test") === -1
+          )
+          .join("\n")
+      );
+
+      imports.system.exit(1);
+    });
+  }
+
+  /**
+   * @param {string} title
+   * @param {(t: Test) => void} callback
+   */
+  constructor(title, callback) {
+    this.callback = callback;
+
+    this.title = title;
   }
 
   /**
@@ -23,9 +65,23 @@ class Test {
    */
   is(x, y) {
     if (x !== y) {
-      throw new Error(`${x} !== ${y}`);
+      const error = new Error(`${x} == ${y}`);
+      error.name = "AssertionError";
+      throw error;
     }
+  }
+
+  pass() {
+    return;
   }
 }
 
-exports.test = Test.test;
+Test.debug = console.error;
+
+Test.path = "";
+
+/** @type{Test[]} */
+Test.tests = [];
+
+exports.Test = Test;
+exports.test = Test.push;

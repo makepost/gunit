@@ -2,12 +2,14 @@
   "name": "gunit",
   "version": "0.1.0",
   "description": "Gets coverage or dies trying. CommonJS runtime for Gjs",
+  "main": "gunit-src",
+  "types": "gunit-src",
   "bin": {
     "gunit": "bin/coverage.sh"
   },
   "scripts": {
     "coverage": "GJS_COVERAGE_PREFIXES=`pwd`/gunit-src bash bin/coverage.sh",
-    "format": "tslint --fix 'bin/**/*.js' 'gunit-src/**/*.js' && tsc",
+    "format": "tslint --fix 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
     "start": "gjs bin/repl.js",
     "test": "NODE_ENV=production gjs bin/test.js"
   },

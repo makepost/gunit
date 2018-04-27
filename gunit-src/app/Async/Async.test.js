@@ -2,9 +2,7 @@ const { PRIORITY_DEFAULT } = imports.gi.GLib;
 const { test } = require("../Test/Test");
 const { Async } = require("./Async");
 
-test("Async: wraps _async and _finish into node-style callback", t => {
-  const { GioFile } = setup();
-
+test("wraps _async and _finish into node-style callback", t => {
   const existingDir = new GioFile(true);
 
   Async.fromGio(
@@ -34,34 +32,26 @@ test("Async: wraps _async and _finish into node-style callback", t => {
   );
 });
 
-/**
- * ReferenceError workaround. TODO: Run tests asynchronously, so `GioFile`
- * lexical declaration initializes before being accessed.
- */
-function setup() {
-  class GioFile {
+class GioFile {
+  /**
+   * @param {boolean} exists
+   */
+  constructor(exists) {
+    this.exists = exists;
+
     /**
-     * @param {boolean} exists
+     * @param {any} _
      */
-    constructor(exists) {
-      this.exists = exists;
-
-      /**
-       * @param {any} _
-       */
-      this.make_directory_finish = _ => {
-        if (this.exists) {
-          throw new Error("Directory exists.");
-        } else {
-          return true;
-        }
-      };
-    }
-
-    make_directory_async() {
-      arguments[arguments.length - 1](null, {});
-    }
+    this.make_directory_finish = _ => {
+      if (this.exists) {
+        throw new Error("Directory exists.");
+      } else {
+        return true;
+      }
+    };
   }
 
-  return { GioFile };
+  make_directory_async() {
+    arguments[arguments.length - 1](null, {});
+  }
 }
