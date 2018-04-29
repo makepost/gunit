@@ -7,6 +7,7 @@ const dirname = imports.gi.Gio.File.new_for_path(path)
   .get_path();
 imports.searchPath.push(dirname);
 new imports["gunit-src"].app.Require.Require.Require().require();
+const { Console } = require("../gunit-src/app/Console/Console");
 
 const your = imports.gi.GLib.get_current_dir();
 imports.searchPath.splice(-1, 1, your);
@@ -18,7 +19,5 @@ if (ARGV.length) {
 
   require(entry);
 } else {
-  const { Console } = require("../gunit-src/app/Console/Console");
-
   new Console().run();
 }
