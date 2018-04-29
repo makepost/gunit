@@ -32,6 +32,36 @@ test("wraps _async and _finish into node-style callback", t => {
   );
 });
 
+test("from gio _async and _finish, creates promise", async t => {
+  const existingDir = new GioFile(true);
+
+  let error;
+
+  try {
+    await Async.fromGio(
+      readyCallback =>
+        existingDir.make_directory_async(PRIORITY_DEFAULT, null, readyCallback),
+
+      asyncResult => existingDir.make_directory_finish(asyncResult)
+    );
+  } catch (_) {
+    error = _;
+  }
+
+  t.is(error.message, "Directory exists.");
+
+  const dir = new GioFile(false);
+
+  const result = await Async.fromGio(
+    readyCallback =>
+      dir.make_directory_async(PRIORITY_DEFAULT, null, readyCallback),
+
+    asyncResult => dir.make_directory_finish(asyncResult)
+  );
+
+  t.is(result, true);
+});
+
 class GioFile {
   /**
    * @param {boolean} exists

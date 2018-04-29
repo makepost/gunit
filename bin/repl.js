@@ -1,5 +1,5 @@
-#!/usr/bin/gjs
-// Sets up the environment, and runs a Gjs shell or your app.
+#!/usr/bin/env gjs
+// Sets up the environment, and runs an async Gjs shell or your app.
 
 const path = String(new Error().stack).replace(/^.*?@(.*):[\s\S]*/, "$1");
 const dirname = imports.gi.Gio.File.new_for_path(path)
@@ -12,7 +12,13 @@ const your = imports.gi.GLib.get_current_dir();
 imports.searchPath.splice(-1, 1, your);
 
 if (ARGV.length) {
-  require(ARGV[0]); // Must be absolute path.
+  const entry = imports.gi.Gio.File.new_for_path(your)
+    .resolve_relative_path(ARGV[0])
+    .get_path();
+
+  require(entry);
 } else {
-  imports.console.interact();
+  const { Console } = require("../gunit-src/app/Console/Console");
+
+  new Console().run();
 }

@@ -52,7 +52,6 @@ const loop = imports.mainloop;
   // Make sure the report shows uncovered modules.
   const modules = scripts.filter(x => !/\.test\.js$/.test(x));
   modules.forEach(x => {
-    print(x);
     require(x);
   });
 
