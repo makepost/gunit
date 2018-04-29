@@ -1,4 +1,4 @@
-#!/usr/bin/gjs
+#!/usr/bin/env gjs
 // Sets up the environment and runs the tests.
 // - `npm test`: All tests.
 // - `npm test Action Panel`: Tests from src/app/{Action,Panel} only.
@@ -26,6 +26,24 @@ const data = Flatten.flatten(imports.gi.Gio.File.new_for_path(your), {
   exclude: [".git", "bin", "coverage", "node_modules"]
 });
 
+for (let i = 0; i < ARGV.length; i++) {
+  if (ARGV[i] === "-h" || ARGV[i] === "--help") {
+    print("Usage: gunit [OPTION]... [LAST_DIRNAME_WHITELIST]...");
+    print("Find **/*.test.js and run with GNOME JavaScript.");
+    print("");
+    print("  -s, --serial   disable concurrency");
+    print("  -h, --help     display this help and exit");
+
+    imports.system.exit(0);
+  }
+
+  if (ARGV[i] === "-s" || ARGV[i] === "--serial") {
+    Test.props.serial = true;
+    ARGV.splice(i, 1);
+    i--;
+  }
+}
+
 const scripts = data.files
   .map(x => x.relativePath)
   .filter(
@@ -41,13 +59,11 @@ const loop = imports.mainloop;
 
 (async () => {
   const tests = scripts.filter(x => /\.test\.js$/.test(x));
-  await Promise.all(
-    tests.map(async x => {
-      Test.path = x;
-      require(x);
-      await Test.run();
-    })
-  );
+  await Test.all(tests, async x => {
+    Test.path = x;
+    require(x);
+    await Test.run();
+  });
 
   // Make sure the report shows uncovered modules.
   const modules = scripts.filter(x => !/\.test\.js$/.test(x));

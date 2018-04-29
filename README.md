@@ -67,6 +67,18 @@ npm test
 
 Will find and load `*.test.js` in your app directory.
 
+## CLI
+
+```
+$ gunit --help
+
+Usage: gunit [OPTION]... [LAST_DIRNAME_WHITELIST]...
+Find **/*.test.js and run with GNOME JavaScript.
+
+  -s, --serial   disable concurrency
+  -h, --help     display this help and exit
+```
+
 ## License
 
 MIT

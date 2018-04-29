@@ -1,4 +1,23 @@
+const { ErrorStack } = require("../Error/ErrorStack");
+
 class Test {
+  /**
+   * @template T, TReturn
+   * @param {T[]} xs
+   * @param {(x: T) => Promise<TReturn>} createPromise
+   */
+  static async all(xs, createPromise) {
+    if (this.props.serial) {
+      for (const x of xs) {
+        await createPromise(x);
+      }
+
+      return;
+    }
+
+    return Promise.all(xs.map(createPromise));
+  }
+
   /**
    * @param {string} title
    * @param {(t: Test) => void} callback
@@ -15,34 +34,21 @@ class Test {
 
     const tests = this.tests.splice(0);
 
-    await Promise.all(
-      tests.map(async test => {
-        print(`${component}: ${test.title} STARTED`);
+    await this.all(tests, async test => {
+      print(`${component}: ${test.title} STARTED`);
 
-        try {
-          await test.callback(test);
-        } catch (error) {
-          print(`${component}: ${test.title} ERROR`);
-          throw error;
-        }
+      try {
+        await test.callback(test);
+      } catch (error) {
+        print(`${component}: ${test.title} ERROR`);
+        throw error;
+      }
 
-        print(`${component}: ${test.title} SUCCESS`);
-      })
-    ).catch(error => {
+      print(`${component}: ${test.title} SUCCESS`);
+    }).catch(error => {
       this.debug(error);
 
-      this.debug(
-        error.stack
-          .replace(/\n[^\w][^\n]+/g, "")
-          .split("\n")
-          .filter(
-            (/** @type {string} */ x) =>
-              x.length &&
-              /\w/.test(x[0]) &&
-              x.indexOf("gunit-src/app/Test") === -1
-          )
-          .join("\n")
-      );
+      this.debug(new ErrorStack(error).remove("gunit-src/app/Test").toString());
 
       imports.system.exit(1);
     });
@@ -79,6 +85,8 @@ class Test {
 Test.debug = console.error;
 
 Test.path = "";
+
+Test.props = { serial: false };
 
 /** @type{Test[]} */
 Test.tests = [];

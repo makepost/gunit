@@ -7,6 +7,7 @@ const {
 const GLib = imports.gi.GLib;
 const { FileDescriptor } = require("../../domain/File/FileDescriptor");
 const { Async } = require("../Async/Async");
+const { ErrorStack } = require("../Error/ErrorStack");
 
 class Console {
   constructor() {
@@ -23,8 +24,10 @@ class Console {
 
   run() {
     (async () => {
+      let buffer = "";
+
       while (true) {
-        this.out.put_string("mainloop> ", null);
+        this.out.put_string(buffer ? "... " : "mainloop> ", null);
 
         const [line] = await Async.fromGio(
           readyCallback =>
@@ -33,16 +36,42 @@ class Console {
           asyncResult => this.in.read_line_finish_utf8(asyncResult)
         );
 
-        if (line === null) {
+        if (line === null && buffer) {
+          // Made a mistake? Let's clear and start again.
+          buffer = "";
+        } else if (line === null) {
+          this.out.put_string("", null);
           this.loop.quit();
           return;
-        }
+        } else {
+          buffer += line;
 
-        try {
-          // tslint:disable-next-line:no-eval
-          this.out.put_string(eval(line) + "\n", null);
-        } catch (error) {
-          this.out.put_string(error.message + "\n" + error.stack + "\n", null);
+          try {
+            // tslint:disable-next-line:no-eval
+            this.out.put_string(eval(buffer) + "\n", null);
+
+            buffer = "";
+          } catch (error) {
+            if (error.constructor === SyntaxError) {
+              // Prompt for another buffer line.
+            } else {
+              buffer = "";
+
+              this.out.put_string(
+                error.name + ": " + error.message + "\n",
+                null
+              );
+
+              const stack = new ErrorStack(error)
+                .remove("gunit-src/app/Console")
+                .remove("gjs/modules/mainloop")
+                .toString();
+
+              if (stack) {
+                this.out.put_string(stack + "\n", null);
+              }
+            }
+          }
         }
       }
     })();

@@ -14,7 +14,7 @@ imports.searchPath.splice(-1, 1, your);
 
 if (ARGV.length) {
   const entry = imports.gi.Gio.File.new_for_path(your)
-    .resolve_relative_path(ARGV[0])
+    .resolve_relative_path(ARGV.splice(0, 1)[0])
     .get_path();
 
   require(entry);
