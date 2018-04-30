@@ -1,5 +1,4 @@
 .vscode/
-gunit-src/app/Async/
 gunit-src/app/Bind/
 gunit-src/app/index.js
 .editorconfig
