@@ -175,9 +175,17 @@ class Console {
     // TODO: Push expression to history.
     // this.history.push(this.expression);
 
+    const expression = this.expression;
+
     this.output.put_string(
-      // tslint:disable-next-line:no-eval
-      `${eval(this.expression)}\n${this.terminal.saveCursor}`,
+      `${function() {
+        // Dirname matters, any filename would be ok.
+        // tslint:disable-next-line:no-eval
+        eval(`module.filename = GLib.get_current_dir() + "/package.json"`);
+
+        // tslint:disable-next-line:no-eval
+        return eval(expression);
+      }.call(window)}\n${this.terminal.saveCursor}`,
       null
     );
 

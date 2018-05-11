@@ -29,7 +29,7 @@ var Require = class {
     /**
      * Regular expression to get current module path from error stack.
      */
-    this.currentModulePath = /^[\s\S]*?\n.*?@(.*?):[\s\S]*/;
+    this.currentModulePath = /^[\s\S]*?\n.*?@(.*?)(?:line\ \d+ > eval)?:[\s\S]*/;
 
     /**
      * Arrays of required modules, indexed by parent filename.
@@ -282,13 +282,12 @@ var Require = class {
        * requested it.
        */
       get: () => {
-        const dirname = String(new Error().stack).replace(
+        const path = String(new Error().stack).replace(
           this.currentModulePath,
           "$1"
         );
-        const gFile = this.File.new_for_path(dirname);
-        const parentFilename = gFile.get_path();
-        const require = this.requireModule.bind(null, parentFilename);
+        const gFile = this.File.new_for_path(path);
+        const require = this.requireModule.bind(null, this.getOrCreate(path));
         require.cache = this.modules;
         require.resolve = this.resolve.bind(null, this.dirname(gFile));
         return require;
@@ -454,7 +453,12 @@ var Require = class {
     /** @type {string | undefined} */
     let result = undefined;
 
-    if (X.slice(0, 2) === "./" || X[0] === "/" || X.slice(0, 3) === "../") {
+    if (
+      X === "." ||
+      X.slice(0, 2) === "./" ||
+      X[0] === "/" ||
+      X.slice(0, 3) === "../"
+    ) {
       result =
         this.LOAD_AS_FILE(this.JOIN(Y, X)) ||
         this.LOAD_AS_DIRECTORY(this.JOIN(Y, X));
@@ -470,7 +474,7 @@ var Require = class {
       return result;
     }
 
-    throw new Error("Module not found: " + X);
+    throw new Error(`Module not found: ${X} in ${Y}`);
   }
 
   /**
@@ -500,11 +504,11 @@ var Require = class {
    * to reload a module that has been deleted from cache.
    *
    * @private
-   * @param {string} parentFilename
+   * @param {{ filename: string }} parent
    * @param {string} path
    */
-  requireClosure(parentFilename, path) {
-    const dirname = this.dirname(this.File.new_for_path(parentFilename));
+  requireClosure(parent, path) {
+    const dirname = this.dirname(this.File.new_for_path(parent.filename));
     const filename = this.resolve(dirname, path);
 
     if (this.modules[filename]) {
@@ -514,7 +518,7 @@ var Require = class {
     let contents = String(this.GLib.file_get_contents(filename)[1]);
     const module = this.getOrCreate(filename);
 
-    const require = this.requireModule.bind(null, filename);
+    const require = this.requireModule.bind(null, module);
     require.cache = this.modules;
     require.resolve = this.resolve.bind(null, dirname);
 
@@ -531,10 +535,10 @@ var Require = class {
       contents
     )(module.exports, require, module, filename, dirname);
 
-    if (!this.dependencies[parentFilename]) {
-      this.dependencies[parentFilename] = [filename];
-    } else if (this.dependencies[parentFilename].indexOf(filename) === -1) {
-      this.dependencies[parentFilename].push(filename);
+    if (!this.dependencies[parent.filename]) {
+      this.dependencies[parent.filename] = [filename];
+    } else if (this.dependencies[parent.filename].indexOf(filename) === -1) {
+      this.dependencies[parent.filename].push(filename);
     }
 
     return module.exports;
@@ -544,11 +548,11 @@ var Require = class {
    * Loads a module and returns its exports. Caches the module.
    *
    * @private
-   * @param {string} parentFilename
+   * @param {{ filename: string }} parent
    * @param {string} path
    */
-  requireModule(parentFilename, path) {
-    const dirname = this.dirname(this.File.new_for_path(parentFilename));
+  requireModule(parent, path) {
+    const dirname = this.dirname(this.File.new_for_path(parent.filename));
     const filename = this.resolve(dirname, path);
 
     if (this.modules[filename]) {
@@ -562,12 +566,12 @@ var Require = class {
         this.dependencies[filename].splice(0);
       }
 
-      return this.requireClosure(parentFilename, path);
+      return this.requireClosure(parent, path);
     }
 
     if (this.GLib.getenv("NODE_ENV") === "production" && this.Fun) {
       // Faster than importing dirs.
-      return this.requireClosure(parentFilename, path);
+      return this.requireClosure(parent, path);
     }
 
     if (path.slice(-5) === ".json") {
@@ -585,7 +589,7 @@ var Require = class {
       .split("/");
 
     if (parts[parts.length - 1] === "toString") {
-      return this.requireClosure(parentFilename, path);
+      return this.requireClosure(parent, path);
     }
 
     const module = this.getOrCreate(filename);
@@ -594,10 +598,10 @@ var Require = class {
       current = current[x];
     });
 
-    if (!this.dependencies[parentFilename]) {
-      this.dependencies[parentFilename] = [filename];
-    } else if (this.dependencies[parentFilename].indexOf(filename) === -1) {
-      this.dependencies[parentFilename].push(filename);
+    if (!this.dependencies[parent.filename]) {
+      this.dependencies[parent.filename] = [filename];
+    } else if (this.dependencies[parent.filename].indexOf(filename) === -1) {
+      this.dependencies[parent.filename].push(filename);
     }
 
     return module.exports;
