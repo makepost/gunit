@@ -11,7 +11,7 @@
     "coverage": "GJS_COVERAGE_PREFIXES=`pwd`/gunit-src bash bin/coverage.sh",
     "format": "tslint --fix 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
     "lint": "tslint 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
-    "start": "gjs bin/repl.js",
+    "start": "stty -echo -icanon min 1 && gjs bin/repl.js; stty echo icanon",
     "test": "NODE_ENV=production gjs bin/test.js"
   },
   "repository": "https://github.com/makepost/gunit",

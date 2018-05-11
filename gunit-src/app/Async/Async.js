@@ -4,35 +4,25 @@ class Async {
   /**
    * Calls an async method on a Gio object, given a Node-style callback.
    *
+   * @template T
    * @param {(readyCallback: (_: any, result: AsyncResult) => void) => void} start
-   * @param {(asyncResult: AsyncResult) => any} finish
-   * @param {((error?: any, result?: any) => void)?} [callback]
+   * @param {(asyncResult: AsyncResult) => T} finish
+   * @returns {Promise<T>}
    */
-  static fromGio(start, finish, callback) {
-    if (!callback) {
-      return new Promise((resolve, reject) => {
-        Async.fromGio(start, finish, (error, result) => {
-          if (!result) {
-            reject(error);
-            return;
-          }
+  static fromGio(start, finish) {
+    return new Promise((resolve, reject) => {
+      start((_, asyncResult) => {
+        let result;
 
-          resolve(result);
-        });
+        try {
+          result = finish(asyncResult);
+        } catch (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(result);
       });
-    }
-
-    start((_, asyncResult) => {
-      let result;
-
-      try {
-        result = finish(asyncResult);
-      } catch (error) {
-        callback(error);
-        return;
-      }
-
-      callback(undefined, result);
     });
   }
 }
