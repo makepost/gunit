@@ -1,4 +1,4 @@
-const { ByteArray } = imports.byteArray;
+const { ByteArray, fromString } = imports.byteArray;
 const {
   DataInputStream,
   DataOutputStream,
@@ -13,7 +13,7 @@ const { ErrorStack } = require("../Error/ErrorStack");
 
 /**
  * Prompts you for JavaScript expressions to run asynchronously, not blocking
- * the main loop. Lets you move cursor and edit characters.
+ * the main loop. Saves history. Lets you move cursor and edit characters.
  */
 class Console {
   get expression() {
@@ -116,9 +116,24 @@ class Console {
     /** @type {ByteArray[]} */
     this.bytes = [];
 
-    // TODO: Edit and re-run previous expression.
-    // /** @type {string[]} */
-    // this.history = [];
+    /** @type {string[]} */
+    this.history = [""];
+
+    try {
+      this.history = GLib.file_get_contents(
+        `${GLib.get_home_dir()}/.gjs_repl_history`
+      )[1]
+        .toString()
+        .split("\n");
+
+      if (!this.history.length) {
+        this.history.push("");
+      }
+    } catch (_) {
+      // New history.
+    }
+
+    this.historyCursor = -1;
 
     this.input = new DataInputStream({
       base_stream: new UnixInputStream({ fd: FileDescriptor.Input })
@@ -143,6 +158,12 @@ class Console {
 
   clear() {
     this.bytes.splice(0);
+
+    if (!this.history.length || this.history[this.history.length - 1]) {
+      this.history.push("");
+    }
+
+    this.historyCursor = -1;
   }
 
   /**
@@ -172,10 +193,15 @@ class Console {
   }
 
   eval() {
-    // TODO: Push expression to history.
-    // this.history.push(this.expression);
+    const expression = this.expression.replace(/\n$/, "");
 
-    const expression = this.expression;
+    if (
+      expression &&
+      (!this.history.length ||
+        expression !== this.history[this.history.length - 1])
+    ) {
+      this.history[this.history.length - 1] = expression;
+    }
 
     this.output.put_string(
       `${function() {
@@ -194,6 +220,12 @@ class Console {
 
   quit() {
     this.output.put_string(`\n${this.terminal.saveCursor}`, null);
+
+    GLib.file_set_contents(
+      `${GLib.get_home_dir()}/.gjs_repl_history`,
+      fromString(this.history.join("\n"))
+    );
+
     this.loop.quit();
   }
 
@@ -242,14 +274,42 @@ class Console {
         } else if (this.expression.endsWith("\n")) {
           this.output.put_string("\n", null);
 
-          // TODO: Debug.
-          // this.output.put_string(`DEBUG: ${JSON.stringify(this.sequence)}\n`, null);
+          // this.output.put_string(
+          //   `DEBUG: ${JSON.stringify(this.sequence)}\n`,
+          //   null
+          // );
 
           try {
             this.eval();
           } catch (error) {
             this.error(error);
           }
+        } else if (
+          this.sequence.endsWith(`${terminal.escape}A`) &&
+          this.historyCursor > -this.history.length
+        ) {
+          this.history[
+            this.history.length + this.historyCursor
+          ] = this.expression;
+
+          this.historyCursor--;
+
+          const prev = this.history[this.history.length + this.historyCursor];
+
+          this.bytes = [fromString(prev)];
+        } else if (
+          this.sequence.endsWith(`${terminal.escape}B`) &&
+          this.historyCursor < -1
+        ) {
+          this.history[
+            this.history.length + this.historyCursor
+          ] = this.expression;
+
+          this.historyCursor++;
+
+          const next = this.history[this.history.length + this.historyCursor];
+
+          this.bytes = [fromString(next)];
         }
       }
     })().catch(print);
