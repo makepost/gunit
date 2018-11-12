@@ -1,5 +1,9 @@
 const { File, FileQueryInfoFlags, FileType } = imports.gi.Gio;
 const GLib = imports.gi.GLib;
+const toString =
+  imports.byteArray.toString(imports.byteArray.fromString("_")) === "_"
+    ? imports.byteArray.toString
+    : String;
 
 // Define with var, so Gjs native module exports it.
 // tslint:disable:no-var-keyword
@@ -14,7 +18,6 @@ var Require = class {
     const keys = Object.getOwnPropertyNames(Require.prototype);
 
     /** @type {{ [key: string]: any }} */
-
     const self = this;
 
     for (let i = 0; i < keys.length; i++) {
@@ -26,62 +29,54 @@ var Require = class {
       }
     }
 
-    /**
-     * Regular expression to get current module path from error stack.
-     */
+    /** Regular expression to get current module path from error stack. */
     this.currentModulePath = /^[\s\S]*?\n.*?@(.*?)(?:line\ \d+ > eval)?:[\s\S]*/;
 
     /**
      * Arrays of required modules, indexed by parent filename.
+     * @type {{ [path: string]: string[] }}
      */
     this.dependencies = {};
 
     /**
      * Object where filenames of the modules that have ever been required are keys.
+     * @type {{ [path: string]: true }}
      */
     this.filenames = {};
 
     /**
      * Creates function from string. Breaks coverage for the module defining it,
      * so defined in `./RequireFun` that is loaded when `require` is available.
-     *
      * @type {any}
      */
     this.Fun = undefined;
 
-    /**
-     * File system polling interval.
-     */
+    /** File system polling interval. */
     this.hmrInterval = 1000;
 
-    /**
-     * Delay to make sure file has finished being written.
-     */
+    /** Delay to make sure file has finished being written. */
     this.hmrTimeout = 1000;
 
     /**
      * Cache of modules, indexed by filename.
+     * @type {{ [path: string]: any }}
      */
     this.modules = {};
   }
 
   /**
    * Invalidates cache and calls a function when a module file is changed.
-   *
-   * @param {string} dirname
-   * @param {string} path
-   * @param {() => void} callback
+   * @param {string} dirname @param {string} path @param {() => void} callback
    */
   accept(dirname, path, callback) {
     const filename = this.resolve(dirname, path);
-    let lastContents = {};
+    /** @type {{ [path: string]: string | undefined }} */ let lastContents = {};
     let isVerifyingChange = false;
 
     const handleChanged = () => {
       if (isVerifyingChange) {
         return;
       }
-
       isVerifyingChange = true;
 
       this.GLib.timeout_add(this.GLib.PRIORITY_DEFAULT, this.hmrTimeout, () => {
@@ -90,7 +85,7 @@ var Require = class {
             return;
           }
 
-          const contents = String(
+          const contents = toString(
             this.GLib.file_get_contents(filenameToRead)[1]
           );
 
@@ -112,7 +107,7 @@ var Require = class {
     };
 
     this.flatten(filename).forEach(filenameToRead => {
-      lastContents[filenameToRead] = String(
+      lastContents[filenameToRead] = toString(
         this.GLib.file_get_contents(filenameToRead)[1]
       );
     });
@@ -127,7 +122,9 @@ var Require = class {
           return;
         }
 
-        const contents = String(this.GLib.file_get_contents(filenameToRead)[1]);
+        const contents = toString(
+          this.GLib.file_get_contents(filenameToRead)[1]
+        );
 
         if (lastContents[filenameToRead] !== contents) {
           handleChanged();
@@ -140,7 +137,6 @@ var Require = class {
 
   /**
    * Gets pathnames of a cached module and all its dependencies.
-   *
    * @param {string} filename
    */
   flatten(filename) {
@@ -160,9 +156,7 @@ var Require = class {
     return result;
   }
 
-  /**
-   * Returns environment variables.
-   */
+  /** Returns environment variables. */
   getEnv() {
     /** @type {string[]} */
     const pairs = this.GLib.get_environ();
@@ -181,7 +175,6 @@ var Require = class {
 
   /**
    * Returns a cached module or creates an empty one. Normalizes the path.
-   *
    * @param {string} path
    */
   getOrCreate(path) {
@@ -218,9 +211,7 @@ var Require = class {
     window.console = { error: print, log: print, warn: print };
 
     Object.defineProperty(window, "__filename", {
-      /**
-       * Returns the full path to the module that requested it.
-       */
+      /** Returns the full path to the module that requested it. */
       get: () => {
         const path = String(new Error().stack).replace(
           this.currentModulePath,
@@ -231,9 +222,7 @@ var Require = class {
     });
 
     Object.defineProperty(window, "__dirname", {
-      /**
-       * Returns the full path to the parent dir of the module that requested it.
-       */
+      /** Returns the full path to the parent dir of the module that requested it. */
       get: () => {
         const path = String(new Error().stack).replace(
           this.currentModulePath,
@@ -304,13 +293,9 @@ var Require = class {
     this.JOIN = memoize(this.JOIN);
 
     this.Fun = require("./RequireFun").RequireFun;
-    // exports.Require = Require; // FIXME
   }
 
-  /**
-   * @private
-   * @param {string} X
-   */
+  /** @private @param {string} X */
   IS_FILE(X) {
     const gFile = this.File.new_for_path(X);
 
@@ -327,10 +312,7 @@ var Require = class {
     return gFileInfo.get_file_type() === FileType.REGULAR;
   }
 
-  /**
-   * @private
-   * @param {string} X
-   */
+  /** @private @param {string} X */
   LOAD_AS_FILE(X) {
     if (this.IS_FILE(X)) {
       return X;
@@ -345,13 +327,10 @@ var Require = class {
     }
   }
 
-  /**
-   * @private
-   * @param {string} X
-   */
+  /** @private @param {string} X */
   LOAD_AS_DIRECTORY(X) {
     if (this.IS_FILE(this.JOIN(X, "package.json"))) {
-      const contents = String(
+      const contents = toString(
         this.GLib.file_get_contents(this.JOIN(X, "package.json"))[1]
       );
       const M = this.JOIN(X, JSON.parse(contents).main);
@@ -365,10 +344,7 @@ var Require = class {
     return this.LOAD_INDEX(X);
   }
 
-  /**
-   * @private
-   * @param {string} X
-   */
+  /** @private @param {string} X */
   LOAD_INDEX(X) {
     if (this.IS_FILE(this.JOIN(X, "index.js"))) {
       return this.JOIN(X, "index.js");
@@ -379,11 +355,7 @@ var Require = class {
     }
   }
 
-  /**
-   * @private
-   * @param {string} X
-   * @param {string} START
-   */
+  /** @private @param {string} X @param {string} START */
   LOAD_NODE_MODULES(X, START) {
     const DIRS = this.NODE_MODULES_PATHS(START);
 
@@ -398,10 +370,7 @@ var Require = class {
     }
   }
 
-  /**
-   * @private
-   * @param {string} START
-   */
+  /** @private @param {string} START */
   NODE_MODULES_PATHS(START) {
     const PARTS = START.split("/");
     let I = PARTS.length - 1;
@@ -425,11 +394,7 @@ var Require = class {
     return DIRS;
   }
 
-  /**
-   * @private
-   * @param {string} X
-   * @param {string} Y
-   */
+  /** @private @param {string} X @param {string} Y */
   JOIN(X, Y) {
     return this.File.new_for_path(X)
       .resolve_relative_path(Y)
@@ -438,9 +403,7 @@ var Require = class {
 
   /**
    * Require(X) from module at path Y.
-   *
    * @see https://nodejs.org/api/modules.html#modules_all_together
-   *
    * @private
    * @param {string} X
    * @param {string} Y
@@ -477,10 +440,7 @@ var Require = class {
     throw new Error(`Module not found: ${X} in ${Y}`);
   }
 
-  /**
-   * @private
-   * @param {File} gFile
-   */
+  /** @private @param {File} gFile */
   dirname(gFile) {
     const parent = /** @type {File} */ (gFile.get_parent());
     return parent.get_path();
@@ -489,10 +449,7 @@ var Require = class {
   /**
    * Gets a normalized local pathname. Understands Dot and Dot Dot, or looks into
    * node_modules up to the root. Adds '.js' suffix if omitted.
-   *
-   * @private
-   * @param {string} dirname
-   * @param {string} path
+   * @private @param {string} dirname @param {string} path
    */
   resolve(dirname, path) {
     return this.REQUIRE(path, dirname);
@@ -502,10 +459,7 @@ var Require = class {
    * Loads a module by evaluating file contents in a closure. For example, this
    * can be used to require lodash/toString, which Gjs can't import natively. Or
    * to reload a module that has been deleted from cache.
-   *
-   * @private
-   * @param {{ filename: string }} parent
-   * @param {string} path
+   * @private @param {{ filename: string }} parent @param {string} path
    */
   requireClosure(parent, path) {
     const dirname = this.dirname(this.File.new_for_path(parent.filename));
@@ -515,7 +469,7 @@ var Require = class {
       return this.modules[filename].exports;
     }
 
-    let contents = String(this.GLib.file_get_contents(filename)[1]);
+    let contents = toString(this.GLib.file_get_contents(filename)[1]);
     const module = this.getOrCreate(filename);
 
     const require = this.requireModule.bind(null, module);
@@ -524,6 +478,9 @@ var Require = class {
 
     if (contents.indexOf("//# sourceURL=") === -1) {
       contents += `\n//# sourceURL=${filename}`;
+    }
+    if (contents[0] === "#") {
+      contents = contents.replace(/^.+?\n/, "");
     }
 
     this.Fun(
@@ -546,10 +503,7 @@ var Require = class {
 
   /**
    * Loads a module and returns its exports. Caches the module.
-   *
-   * @private
-   * @param {{ filename: string }} parent
-   * @param {string} path
+   * @private @param {{ filename: string }} parent @param {string} path
    */
   requireModule(parent, path) {
     const dirname = this.dirname(this.File.new_for_path(parent.filename));
@@ -575,7 +529,7 @@ var Require = class {
     }
 
     if (path.slice(-5) === ".json") {
-      const contents = String(this.GLib.file_get_contents(path)[1]);
+      const contents = toString(this.GLib.file_get_contents(path)[1]);
 
       return JSON.parse(contents);
     }
@@ -610,7 +564,6 @@ var Require = class {
 
 /**
  * Caches results of unary or binary function.
- *
  * @param {(arg1: any, arg2?: any) => any} fun
  */
 function memoize(fun) {

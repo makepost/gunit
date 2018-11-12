@@ -18,10 +18,7 @@ class Test {
     return Promise.all(xs.map(createPromise));
   }
 
-  /**
-   * @param {string} title
-   * @param {(t: Test) => void} callback
-   */
+  /** @param {string} title @param {(t: Test) => void} callback */
   static push(title, callback) {
     Test.tests.push(new Test(title, callback));
   }
@@ -54,10 +51,7 @@ class Test {
     });
   }
 
-  /**
-   * @param {string} title
-   * @param {(t: Test) => void} callback
-   */
+  /** @param {string} title @param {(t: Test) => void} callback */
   constructor(title, callback) {
     this.callback = callback;
 
@@ -81,15 +75,10 @@ class Test {
     return;
   }
 }
-
+// tslint:disable-next-line:no-console
 Test.debug = console.error;
-
 Test.path = "";
-
 Test.props = { serial: false };
-
-/** @type{Test[]} */
-Test.tests = [];
-
+/** @type {Test[]} */ Test.tests = [];
 exports.Test = Test;
 exports.test = Test.push;

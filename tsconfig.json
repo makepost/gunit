@@ -6,11 +6,17 @@
     "checkJs": true,
     "noEmit": true,
     "strict": true,
+    "noImplicitAny": true,
     "noImplicitThis": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules/ts-for-gjs/out/index.*"
+  ],
+  "include": [
+    "ts-for-gjs.d.ts",
+    "bin",
+    "gunit-src"
   ]
 }

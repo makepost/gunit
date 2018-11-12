@@ -1,5 +1,5 @@
 let lastPerf = Date.now();
-const perf = {};
+/** @type {{ [path: string]: number }} */ const perf = {};
 
 const reportPerf = () => {
   const now = Date.now();
@@ -25,9 +25,7 @@ class Bind {
   /**
    * Binds prototype methods to your object instance, reporting in development
    * how much time on main loop each called synchronous method takes.
-   *
-   * @param {Object} self
-   * @param {string} filename
+   * @param {Object} self @param {string} filename
    */
   static auto(self, filename) {
     const { prototype } = self.constructor;
@@ -61,5 +59,4 @@ class Bind {
     }
   }
 }
-
 exports.Bind = Bind;

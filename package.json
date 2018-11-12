@@ -9,30 +9,23 @@
   },
   "scripts": {
     "coverage": "GJS_COVERAGE_PREFIXES=`pwd`/gunit-src bash bin/coverage.sh",
-    "format": "tslint --fix 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
-    "lint": "tslint 'bin/**/*.js' 'gunit-src/**/*.js' 'gunit-src/**/*.ts' && tsc",
+    "format": "tslint --fix '{bin,gunit-src}/**/*.{j,t}s' && tsc && gjs bin/test.js",
     "start": "stty -echo -icanon min 1 && gjs bin/repl.js; stty echo icanon",
-    "test": "NODE_ENV=production gjs bin/test.js"
+    "test": "NODE_ENV=production gjs bin/test.js && tslint '{bin,gunit-src}/**/*.{j,t}s' && tsc"
   },
   "repository": "https://github.com/makepost/gunit",
   "author": "makepost <makepost@firemail.cc>",
   "license": "MIT",
-  "dependencies": {
-    "lodash": "^4.17.4"
-  },
   "devDependencies": {
-    "@types/lodash": "^4.14.87",
-    "@types/node": "^8.0.54",
+    "@types/lodash": "^4.14.118",
+    "@types/node": "^10.12.5",
+    "lodash": "^4.17.11",
     "pre-commit": "^1.2.2",
-    "prettier": "^1.12.1",
-    "ts-for-gjs": "git+https://github.com/makepost/ts-for-gjs.git",
-    "tslint": "^5.8.0",
-    "tslint-config-prettier": "^1.12.0",
-    "tslint-plugin-prettier": "^1.3.0",
-    "typescript": "^2.6.2"
-  },
-  "pre-commit": [
-    "lint",
-    "test"
-  ]
+    "prettier": "^1.15.2",
+    "ts-for-gjs": "github:sammydre/ts-for-gjs",
+    "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.15.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.1.6"
+  }
 }
