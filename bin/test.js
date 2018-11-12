@@ -16,6 +16,7 @@ new imports["gunit-src"].app.Require.Require.Require().require();
  * `imports.src` keeps the value it has on first access, so renamed `src`
  * to `gunit-src` which is unlikely to conflict with your app.
  */
+const { ErrorStack } = require("../gunit-src/app/Error/ErrorStack");
 const { Flatten } = require("../gunit-src/app/Flatten/Flatten");
 const { Test } = require("../gunit-src/app/Test/Test");
 
@@ -56,6 +57,7 @@ const scripts = data.files
   .map(x => your + "/" + x);
 
 const loop = imports.mainloop;
+let exit = 0;
 
 (async () => {
   const tests = scripts.filter(x => /\.test\.js$/.test(x));
@@ -71,10 +73,19 @@ const loop = imports.mainloop;
     require(x);
   });
 
-  loop.quit();
+  loop.quit("gunit");
 })().catch(error => {
-  loop.quit();
-  throw error;
+  // tslint:disable:no-console
+  console.error(error);
+  console.error(
+    new ErrorStack(error)
+      .remove("gunit/bin")
+      .remove("gunit-src/app/Test")
+      .toString()
+  );
+  exit = 1;
+  loop.quit("gunit");
 });
 
-loop.run();
+loop.run("gunit");
+imports.system.exit(exit);

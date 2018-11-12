@@ -1,5 +1,3 @@
-const { ErrorStack } = require("../Error/ErrorStack");
-
 class Test {
   /**
    * @template T, TReturn
@@ -11,10 +9,8 @@ class Test {
       for (const x of xs) {
         await createPromise(x);
       }
-
       return;
     }
-
     return Promise.all(xs.map(createPromise));
   }
 
@@ -28,41 +24,25 @@ class Test {
       "",
       this.path
     ])[1];
-
-    const tests = this.tests.splice(0);
-
-    await this.all(tests, async test => {
+    await this.all(this.tests.splice(0), async test => {
       print(`${component}: ${test.title} STARTED`);
-
       try {
         await test.callback(test);
       } catch (error) {
         print(`${component}: ${test.title} ERROR`);
         throw error;
       }
-
       print(`${component}: ${test.title} SUCCESS`);
-    }).catch(error => {
-      this.debug(error);
-
-      this.debug(new ErrorStack(error).remove("gunit-src/app/Test").toString());
-
-      imports.system.exit(1);
     });
   }
 
   /** @param {string} title @param {(t: Test) => void} callback */
   constructor(title, callback) {
     this.callback = callback;
-
     this.title = title;
   }
 
-  /**
-   * @template T
-   * @param {T} x
-   * @param {T} y
-   */
+  /** @template T @param {T} x @param {T} y */
   is(x, y) {
     if (x !== y) {
       const error = new Error(`${x} == ${y}`);
@@ -75,8 +55,6 @@ class Test {
     return;
   }
 }
-// tslint:disable-next-line:no-console
-Test.debug = console.error;
 Test.path = "";
 Test.props = { serial: false };
 /** @type {Test[]} */ Test.tests = [];
